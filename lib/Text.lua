@@ -527,7 +527,7 @@ function Text:update(dt)
     self.dt = dt
 end
 
-function Text:draw(x, y)
+function Text:draw()
     local font = love.graphics.getFont()
     love.graphics.setFont(self.font or font)
 
@@ -563,8 +563,8 @@ function Text:draw(x, y)
             end
         end
         if regular_font then love.graphics.setFont(self.font) end
-        if self.custom_draw then self.custom_draw(x or self.x, y or self.y, c)
-        else love.graphics.print(c.character, (x or self.x) + c.x, (y or self.y) + c.y, c.r or 0, c.sx or 1, c.sy or 1, 0, 0) end
+        if self.custom_draw then self.custom_draw(self.x, self.y, c)
+        else love.graphics.print(c.character, self.x + c.x, self.y + c.y, c.r or 0, c.sx or 1, c.sy or 1, 0, 0) end
     end
     love.graphics.setFont(font)
 end

@@ -2,9 +2,12 @@ local UpdateSystem = require "src.systems.UpdateSystem"
 local DrawSystem = require "src.systems.DrawSystem"
 local SpriteSystem = require "src.systems.SpriteSystem"
 local MovementSystem = require "src.systems.MovementSystem"
-local DialogSystem = require "src.systems.DialogSystem"
 local CharacterAnimationSystem = require "src.systems.CharacterAnimationSystem"
 local CameraTrackSystem = require "src.systems.CameraTrackSystem"
+local ParallaxSystem = require "src.systems.ParallaxSystem"
+local LightSystem = require "src.systems.LightSystem"
+local SyncSystem = require "src.systems.SyncSystem"
+local AISystem = require "src.systems.AISystem"
 
 local State = class "State"
 
@@ -13,35 +16,47 @@ function State:init(...)
     self.hudCamera = gamera.new(0, 0, W, H)
     CAMERA = self.camera
     HUD_CAMERA = self.hudCamera
+    local ls = LightSystem(self.camera)
+    self.lightSystem = ls
     self.world = tiny.world(
+        SyncSystem(),
         UpdateSystem(),
         MovementSystem(),
         CharacterAnimationSystem(),
         CameraTrackSystem(CAMERA),
+        ParallaxSystem(CAMERA),
+        AISystem(),
 
+        DrawSystem(CAMERA, "bbbg"),
+        SpriteSystem(CAMERA, "bbbg"),
         DrawSystem(CAMERA, "bbg"),
         SpriteSystem(CAMERA, "bbg"),
+        ls.lightInitSystem,
         DrawSystem(CAMERA, "bg"),
         SpriteSystem(CAMERA, "bg"),
         DrawSystem(CAMERA, "mg"),
         SpriteSystem(CAMERA, "mg"),
         DrawSystem(CAMERA, "fg"),
         SpriteSystem(CAMERA, "fg"),
+        ls,
         DrawSystem(CAMERA, "ffg"),
         SpriteSystem(CAMERA, "ffg"),
         DrawSystem(HUD_CAMERA, "hud"),
         SpriteSystem(HUD_CAMERA, "hud"),
-
-        DialogSystem(),
         ...
     )
+end
+
+function State:resize(w, h)
+    self.lightSystem:resize(w, h)
 end
 
 function State:enter()
     WORLD = self.world
     CAMERA = self.camera
     HUD_CAMERA = self.hudCamera
-    love.resize(love.graphics.getWidth(), love.graphics.getHeight())
+    love.resize(love.graphics.getDimensions())
+    self:resize(love.graphics.getDimensions())
     if self.screenShade then WORLD:remove(self.screenShade) end
     self.transitioning = true
     self.screenShade = WORLD:add{

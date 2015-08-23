@@ -10,17 +10,19 @@ multisource = require "lib.multisource"
 gamera = require "lib.gamera"
 lg = love.graphics -- lol
 
-W = 1400
-H = 600
-GROUND_Y = 520
+W = 2100
+H = 900
+DRAW_DEBUG = false
+GROUND_Y = 830
 PAUSED = false
+TIMER = 240
 WORLD = tiny.world()
 SCREEN_TRANSITIONS = flux.group()
 SKIP_INTRO = true
 PLAYER_WIDTH = 128
 PLAYER_HEIGHT = 128
-CAMERA_SCALE = 1.35
-BLOOM_SHADER = ""
+CAMERA_SCALE = 1.6
+SHADER = ""
 POST_PROCESS = true
 POST_PROCESS_CANVAS = ""
 
@@ -55,8 +57,8 @@ function love.resize(w, h)
         HUD_CAMERA:setScale(REALW / W)
     end
     POST_PROCESS_CANVAS = lg.newCanvas(w, h)
-    BLOOM_SHADER:send("canvas_w", w)
-    BLOOM_SHADER:send("canvas_h", h)
+    SHADER:send("canvas_w", w)
+    SHADER:send("canvas_h", h)
 end
 
 local drawSystems = function(_, s) return not not s.isDrawingSystem end
@@ -73,23 +75,39 @@ end
 function love.draw()
     if POST_PROCESS then
         lg.setCanvas(POST_PROCESS_CANVAS)
+        POST_PROCESS_CANVAS:clear()
     else
         lg.setCanvas()
     end
     love.graphics.setShader()
     love.graphics.origin()
     love.graphics.setScissor()
-    love.graphics.setColor(0, 0, 0)
-    love.graphics.rectangle("fill", 0, 0, love.graphics.getWidth(), love.graphics.getHeight())
     love.graphics.setColor(255, 255, 255)
     WORLD:update(PAUSED and 0 or love.timer.getDelta(), drawSystems)
     if POST_PROCESS then
         lg.setCanvas()
         lg.origin()
-        lg.setShader(BLOOM_SHADER)
+        lg.setShader(SHADER)
         lg.setColor(255, 255, 255, 255)
         lg.draw(POST_PROCESS_CANVAS)
         lg.setShader()
+    end
+    lg.origin()
+    if PAUSED then
+        lg.setColor(0, 0, 0, 80)
+        local sw, sh = lg.getDimensions()
+        lg.rectangle("fill", 0, 0, sw, sh)
+        lg.setColor(255, 255, 255)
+        lg.setFont(assets.fnt_big)
+        lg.printf("PAUSED", sw / 2 - 200, sh / 2, 400, "center")
+    end
+    if DRAW_DEBUG then
+        lg.setColor(255, 255, 255)
+        local mx, my = love.mouse.getPosition()
+        local wx, wy = CAMERA:toWorld(mx, my)
+        lg.circle("line", mx, my, 10, 50)
+        lg.setFont(assets.fnt_small)
+        lg.printf(("Screen: (%i, %i)\nWordl: (%i, %i)"):format(mx, my, wx, wy), mx, my + 20, 400, "left")
     end
 end
 
@@ -100,50 +118,14 @@ function love.load()
     -- load assets
     assets = require "src.assets"
 
-    BLOOM_SHADER = love.graphics.newShader([[
-    extern number threshold = 1.0;
-
+    SHADER = love.graphics.newShader([[
     extern number canvas_w = 800;
     extern number canvas_h = 600;
-
-    const number offset_1 = 1.5;
-    const number offset_2 = 3.5;
-
-    const number alpha_0 = 0.43;
-    const number alpha_1 = 0.22;
-    const number alpha_2 = 0.04;
-
-    float luminance(vec3 color)
-    {
-       // numbers make 'true grey' on most monitors, apparently
-       return ((0.212671 * color.r) + (0.715160 * color.g) + (0.072169 * color.b));
-    }
 
     vec4 effect(vec4 color, Image texture, vec2 texture_coords, vec2 pixel_coords)
     {
        vec4 texcolor = Texel(texture, texture_coords);
-
-       // Vertical blur
-       vec3 tc_v = texcolor.rgb * alpha_0;
-
-       tc_v += Texel(texture, texture_coords + vec2(0.0, offset_1)/canvas_h).rgb * alpha_1;
-       tc_v += Texel(texture, texture_coords - vec2(0.0, offset_1)/canvas_h).rgb * alpha_1;
-
-       tc_v += Texel(texture, texture_coords + vec2(0.0, offset_2)/canvas_h).rgb * alpha_2;
-       tc_v += Texel(texture, texture_coords - vec2(0.0, offset_2)/canvas_h).rgb * alpha_2;
-
-       // Horizontal blur
-       vec3 tc_h = texcolor.rgb * alpha_0;
-
-       tc_h += Texel(texture, texture_coords + vec2(offset_1, 0.0)/canvas_w).rgb * alpha_1;
-       tc_h += Texel(texture, texture_coords - vec2(offset_1, 0.0)/canvas_w).rgb * alpha_1;
-
-       tc_h += Texel(texture, texture_coords + vec2(offset_2, 0.0)/canvas_w).rgb * alpha_2;
-       tc_h += Texel(texture, texture_coords - vec2(offset_2, 0.0)/canvas_w).rgb * alpha_2;
-
-       // Smooth
-       vec3 extract = smoothstep(threshold * 0.7, threshold, luminance(texcolor.rgb)) * texcolor.rgb;
-       return vec4(extract + tc_v * 0.8 + tc_h * 0.8, 1.0);
+       return texcolor * color;
     }
     ]])
 
@@ -154,7 +136,7 @@ function love.load()
     local GameState = require "src.states.GameState"
     GameState.resetAll()
     if SKIP_INTRO then
-        gamestate.switch(GameState.getScene(2), "left")
+        gamestate.switch(GameState.getScene(1), "left")
     else
         gamestate.switch(require "src.states.IntroState"())
     end
@@ -166,8 +148,16 @@ end
 
 beholder.observe("keypressed", "escape", love.event.quit)
 
-beholder.observe("keypressed", "b", function()
-    POST_PROCESS = not POST_PROCESS
+-- beholder.observe("keypressed", "b", function()
+--     POST_PROCESS = not POST_PROCESS
+-- end)
+
+beholder.observe("keypressed", "p", function()
+    PAUSED = not PAUSED
+end)
+
+beholder.observe("keypressed", "`", function()
+    DRAW_DEBUG = not DRAW_DEBUG
 end)
 
 beholder.observe("keypressed", "\\", function()

@@ -15,6 +15,7 @@ function DrawSystem:preProcess(dt)
 end
 
 function DrawSystem:process(e)
+    lg.setColor(255, 255, 255, 255)
     e:draw()
 end
 

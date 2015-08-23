@@ -1,35 +1,55 @@
 local State = require "src.states.State"
 local GameState = class("GameState", State)
-local LightSystem = require "src.systems.LightSystem"
 
 local lg = love.graphics
 
+local function makeHud()
+    local hud = {}
+    hud.layer = "hud"
+    hud.draw = function(self)
+
+    end
+    return hud
+end
+
 local function addBackStuff(self)
+    local starscale = 0.6
     self.world:add(
         {
-            position = {x = 0, y = GROUND_Y},
-            sprite = assets.img_ground,
-            layer = "bg"
+            position = {x = 0, y = 0},
+            parallaxAnchor = {x = W / 2, y = H / 2},
+            parallax = 0.25,
+            aabb = {x = 0, y = 0, w = starscale * 2800, h = starscale * 1200},
+            layer = "bbbg",
+            color = {188, 188, 188, 255},
+            sprite = assets.img_stars,
+            scale = starscale
         },
         {
-            position = {x = W / 2 - 128, y = H / 2 - 128},
-            velocity = {x = 0, y = 7},
+            position = {x = 0, y = 0},
+            parallaxAnchor = {x = W / 2, y = H / 2},
+            parallax = 0.25,
             sprite = assets.img_moon,
-            layer = "bbg",
-            aabb = {x = 0, y = 0, w = 256, h = 256},
-            lightColor = {255, 255, 255, 128},
-            lightRadius = 200
+            color = {190, 190, 170, 255},
+            layer = "bbbg",
+            aabb = {x = 0, y = 0, w = 256, h = 256}
+        },
+        {
+            position = {x = 0, y = GROUND_Y - 10},
+            sprite = assets.img_ground,
+            layer = "bg"
         }
     )
 end
 
 function GameState:init(...)
     State.init(self, ...)
-    local ls = self.world:add(LightSystem(self.camera))
-    self.lightSystem = ls
-    self.world:refresh()
-    self.world:setSystemIndex(ls, -5)
     addBackStuff(self)
+    self.world:add(makeHud())
+end
+
+function GameState.generate()
+
 end
 
 function GameState.resetAll()
@@ -62,10 +82,12 @@ function GameState:enter(from, fromside)
     self.player = p
     PLAYER = p
     p.direction = fromside == "left" and "right" or "left"
+    self.world:refresh()
 end
 
 function GameState:leave()
     self.world:remove(self.player)
+    self.world:refresh()
 end
 
 function GameState:toLeft()
@@ -86,34 +108,31 @@ function GameState:toRight()
     return false
 end
 
+local function light(x, y)
+    return {
+        position = {x = x, y = y},
+        lightColor = {255, 255, 190, 150},
+        lightRadius = 250
+    }
+end
+
 GameState.scenes = {
     {
         {
-            position = {x = 0, y = 0},
-            layer = "bbg",
-            sprite = assets.img_stars,
-            scale = 0.5
+            position = {x = 0, y = -75},
+            sprite = assets.img_buildings1,
+            layer = "bg",
         },
-        entities.NPC{x = 800, direction = "left"},
-        entities.NPC{x = 200, direction = "left"},
-        entities.NPC{x = 350, direction = "right"},
-        entities.NPC{x = 1200, direction = "left"}
+        -- light(890, 650),
+        -- light(1080, 650),
+        -- light(300, 650),
+        -- light(100, 650),
+        -- light(1600, 650),
+        -- light(2000, 650),
     },
     {
-        {
-            position = {x = 0, y = 0},
-            layer = "bbg",
-            sprite = assets.img_stars,
-            scale = 0.5
-        }
     },
     {
-        {
-            position = {x = 0, y = 0},
-            layer = "bbg",
-            sprite = assets.img_stars,
-            scale = 0.5
-        },
         entities.NPC{x = 500, direction = "left"}
     }
 }

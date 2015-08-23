@@ -19,7 +19,8 @@ function IntroState:enter()
             shake = function(dt, c)
                 c.x = c.anchor_x + math.random(-shake.shake, shake.shake)
                 c.y = c.anchor_y + math.random(-shake.shake, shake.shake)
-            end
+            end,
+            layer = "hud"
         }),
         Text(0, 350, "[A game by bakpakin for Ludum Dare 33](color)", {
             font = assets.fnt_small,
@@ -28,6 +29,7 @@ function IntroState:enter()
             color = function(dt, c)
                 lg.setColor(255, 255, 255, fade.alpha)
             end,
+            layer = "hud"
         })
     )
     SCREEN_TRANSITIONS:to(shake, 10, {shake = 16}):ease("quartin")

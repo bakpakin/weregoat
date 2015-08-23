@@ -2,8 +2,7 @@ local Character = require "src.entities.Character"
 local Player = class ("Player", Character)
 Player.layer = "fg"
 Player.cameraTrack = true
-Player.lightColor = {255, 255, 255}
-Player.lightRadius = 200
+Player.lightRadius = 250
 
 function Player:init(x)
     Character.init(self, {
@@ -13,7 +12,7 @@ function Player:init(x)
         standAnimation = Character.an40:clone(),
         standSprite = assets.img_player_standing
     })
-    self.walkSpeed = 120
+    self.walkSpeed = 135
     self.color = {255, 255, 255}
     self.controllable = true
 end
@@ -24,13 +23,24 @@ function Player:update(dt)
         local a = love.keyboard.isDown("a")
         local s = love.keyboard.isDown("s")
         local d = love.keyboard.isDown("d")
-
+        self.chargeTimer = math.max(0, (self.chargeTimer or 0) - dt)
         if d and not a then
             self.action = "walking"; self.direction = "right"
         elseif a and not d then
             self.action = "walking"; self.direction = "left"
         else
-            self.action = "standing"
+            if self.crouching then
+                self.action = "getup"
+                self.crouching = false
+            elseif self.action ~= "getup" then
+                self.action = "standing"
+            end
+        end
+        if w and not s and self.chargeTimer == 0 then
+            self.action = "charge"
+        elseif s then
+            self.action = "crouch"
+            self.crouching = true
         end
 
         local p = self.position
