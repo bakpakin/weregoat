@@ -16,12 +16,12 @@ function love.conf(t)
 
     t.os = {
         "love",
-        -- windows = {
-        --     x32       = true,
-        --     x64       = false,
-        --     installer = false,
-        --     appid     = "4E593227-83A1-41D5-BC89-9CAC4C9DE5B1",
-        -- },
-        -- "osx",
+        windows = {
+            x32       = true,
+            x64       = false,
+            installer = false,
+            appid     = "4E593227-83A1-41D5-BC89-9CAC4C9DE5B1",
+        },
+        "osx",
     }
 end

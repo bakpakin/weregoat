@@ -137,32 +137,34 @@ GameState.scenes = {
             sprite = assets.img_buildings1,
             layer = "bg",
         },
+        entities.LampPost(600),
+        entities.LampPost(1400, true),
         entities.NPC{x = 200, hostile = true},
         entities.NPC{x = 400, hostile = true},
         entities.NPC{x = 600, hostile = true},
         entities.NPC{x = 800, hostile = true},
-        entities.NPC{x = 1000, hostile = true},
-
-        light(890, 650),
-        light(1080, 650),
-        light(300, 650),
-        light(100, 650),
-        light(1600, 650),
-        light(2000, 650),
+        entities.NPC{x = 1000, hostile = true}
     },
     {
         {
             position = {x = 0, y = -75},
             sprite = assets.img_buildings2,
             layer = "bg",
-        }
+        },
+        entities.LampPost(70),
+        entities.LampPost(535),
+        entities.LampPost(1400),
+        entities.LampPost(2000),
     },
     {
         {
             position = {x = 0, y = -75},
             sprite = assets.img_buildings3,
             layer = "bg",
-        }
+        },
+        entities.LampPost(200),
+        entities.LampPost(835),
+        entities.LampPost(1950),
     }
 }
 

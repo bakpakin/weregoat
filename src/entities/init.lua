@@ -8,5 +8,7 @@ r "Goat"
 r "Player"
 r "NPC"
 r "Character"
+r "GunShot"
+r "LampPost"
 
 return ret

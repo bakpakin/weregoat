@@ -58,6 +58,15 @@ function AISystem:process(e, dt)
             end
         end
     end
+    if e.animation == e.shootAnimation and
+       e.oldAnimationPosition and
+       e.oldAnimationPosition < 21 and
+       e.animation.position >= 21 then
+        assets.snd_gun:play()
+        local xlerp = 0.5 + d * 0.4
+        self.world:add(entities.GunShot(d, e:getPoint(xlerp, 0.6)))
+    end
+    e.oldAnimationPosition = e.animation.position
 end
 
 return AISystem

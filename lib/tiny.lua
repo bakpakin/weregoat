@@ -348,7 +348,7 @@ local worldMetaTable
 -- Can optionally add default Systems and Entities. Returns the new World along
 -- with default Entities and Systems.
 function tiny.world(...)
-    local ret = {
+    local ret = setmetatable({
 
         -- List of Entities to add
         entitiesToAdd = {},
@@ -370,13 +370,13 @@ function tiny.world(...)
 
         -- List of Systems
         systems = {}
-    }
+    }, worldMetaTable)
 
     tiny_add(ret, ...)
     tiny_manageSystems(ret)
     tiny_manageEntities(ret)
 
-    return setmetatable(ret, worldMetaTable), ...
+    return ret, ...
 end
 
 --- Adds an Entity to the world.
@@ -454,89 +454,96 @@ tiny_remove = tiny.remove
 
 -- Adds and removes Systems that have been marked from the World.
 function tiny_manageSystems(world)
-        local s2a, s2r = world.systemsToAdd, world.systemsToRemove
+    local s2a, s2r = world.systemsToAdd, world.systemsToRemove
 
-        -- Early exit
-        if #s2a == 0 and #s2r == 0 then
-            return
-        end
+    -- Early exit
+    if #s2a == 0 and #s2r == 0 then
+        return
+    end
 
-        local entities = world.entities
-        local systems = world.systems
-        local system, index, filter
-        local entityList, entityIndices, entityIndex, onRemove, onAdd
+    world.systemsToAdd = {}
+    world.systemsToRemove = {}
 
-        -- Remove Systems
-        for i = 1, #s2r do
-            system = s2r[i]
-            index = system.index
-            if system.world == world then
-                onRemove = system.onRemove
-                if onRemove then
-                    entityList = system.entities
-                    for j = 1, #entityList do
-                        onRemove(system, entityList[j])
-                    end
-                end
-                tremove(systems, index)
-                for j = index, #systems do
-                    systems[j].index = j
+    local entities = world.entities
+    local systems = world.systems
+    local system, index, filter
+    local entityList, entityIndices, entityIndex, onRemove, onAdd
+
+    -- Remove Systems
+    for i = 1, #s2r do
+        system = s2r[i]
+        index = system.index
+        if system.world == world then
+            onRemove = system.onRemove
+            if onRemove then
+                entityList = system.entities
+                for j = 1, #entityList do
+                    onRemove(system, entityList[j])
                 end
             end
-            s2r[i] = nil
-
-            -- Clean up System
-            system.world = nil
-            system.entities = nil
-            system.indices = nil
-            system.index = nil
+            tremove(systems, index)
+            for j = index, #systems do
+                systems[j].index = j
+            end
         end
+        s2r[i] = nil
 
-        -- Add Systems
-        for i = 1, #s2a do
-            system = s2a[i]
-            if systems[system.index] ~= system then
-                entityList = {}
-                entityIndices = {}
-                system.entities = entityList
-                system.indices = entityIndices
-                if system.active == nil then
-                    system.active = true
-                end
-                system.modified = true
-                system.world = world
-                index = #systems + 1
-                system.index = index
-                systems[index] = system
+        -- Clean up System
+        system.world = nil
+        system.entities = nil
+        system.indices = nil
+        system.index = nil
+    end
 
-                -- Try to add Entities
-                onAdd = system.onAdd
-                filter = system.filter
-                if filter then
-                    for entity in pairs(entities) do
-                        if filter(system, entity) then
-                            entityIndex = #entityList + 1
-                            entityList[entityIndex] = entity
-                            entityIndices[entity] = entityIndex
-                            if onAdd then
-                                onAdd(system, entity)
-                            end
+    -- Add Systems
+    for i = 1, #s2a do
+        system = s2a[i]
+        if systems[system.index] ~= system then
+            entityList = {}
+            entityIndices = {}
+            system.entities = entityList
+            system.indices = entityIndices
+            if system.active == nil then
+                system.active = true
+            end
+            system.modified = true
+            system.world = world
+            index = #systems + 1
+            system.index = index
+            systems[index] = system
+
+            -- Try to add Entities
+            onAdd = system.onAdd
+            filter = system.filter
+            if filter then
+                for entity in pairs(entities) do
+                    if filter(system, entity) then
+                        entityIndex = #entityList + 1
+                        entityList[entityIndex] = entity
+                        entityIndices[entity] = entityIndex
+                        if onAdd then
+                            onAdd(system, entity)
                         end
                     end
                 end
             end
-            s2a[i] = nil
         end
+        s2a[i] = nil
+    end
 end
 
 -- Adds and removes Entities that have been marked.
 function tiny_manageEntities(world)
+
     local e2a, e2r = world.entitiesToAdd, world.entitiesToRemove
 
     -- Early exit
     if #e2a == 0 and #e2r == 0 then
         return
     end
+
+    world.entitiesToAdd = {}
+    world.entitiesToRemove = {}
 
     local entities = world.entities
     local systems = world.systems
@@ -732,7 +739,10 @@ worldMetaTable = {
         getSystemCount = tiny.getSystemCount,
         getSystemIndex = tiny.getSystemIndex,
         setSystemIndex = tiny.setSystemIndex
-    }
+    },
+    __tostring = function(self)
+        return "tiny-ecs_World"
+    end
 }
 
 return tiny

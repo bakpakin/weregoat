@@ -8,7 +8,7 @@ end
 function SyncSystem:onAdd(e)
     e.world = self.world
     if e.onAdd then
-        e:onAdd()
+        e:onAdd(self.world)
     end
 end
 

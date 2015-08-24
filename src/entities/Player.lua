@@ -2,7 +2,6 @@ local Character = require "src.entities.Character"
 local Player = class ("Player", Character)
 Player.layer = "fg"
 Player.cameraTrack = true
-Player.lightRadius = 250
 
 function Player:init(x)
     Character.init(self, {
@@ -23,13 +22,12 @@ end
 function Player:update(dt)
     Character.update(self, dt)
     if self.controllable and not self.isDead then
-        local n = love.keyboard.isDown("n")
-        local m = love.keyboard.isDown("m")
-        local a = love.keyboard.isDown("a")
-        local s = love.keyboard.isDown("s")
-        local d = love.keyboard.isDown("d")
-        local w = love.keyboard.isDown("w")
-        local e = love.keyboard.isDown("e")
+        local n = love.keyboard.isDown(CONTROLS.CHARGE)
+        local m = love.keyboard.isDown(CONTROLS.KICK)
+        local a = love.keyboard.isDown(CONTROLS.LEFT)
+        local s = love.keyboard.isDown(CONTROLS.CROUCH)
+        local d = love.keyboard.isDown(CONTROLS.RIGHT)
+        local e = love.keyboard.isDown(CONTROLS.FEED)
 
         self.chargeTimer = math.max(0, (self.chargeTimer or 0) - dt)
         self.kickTimer = math.max(0, (self.kickTimer or 0) - dt)
@@ -39,9 +37,6 @@ function Player:update(dt)
         elseif n and (self.chargeTimer == 0 or self.action == "charge") then
             self.action = "charge"
             self.charging = true
-        elseif w then
-            self.action = "death"
-            self.isDead = true
         elseif s then
             self.action = "crouch"
             self.crouching = true

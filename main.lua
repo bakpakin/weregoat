@@ -25,6 +25,14 @@ CAMERA_SCALE = 1.6
 SHADER = ""
 POST_PROCESS = true
 POST_PROCESS_CANVAS = ""
+CONTROLS = {
+    LEFT = "a",
+    RIGHT = "d",
+    CROUCH = "s",
+    CHARGE = "n",
+    KICK = "m",
+    FEED = "e"
+}
 
 local function setFullscreen(fs)
     IS_FULLSCREEN = fs
