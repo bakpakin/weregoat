@@ -3,6 +3,7 @@ Character.isCharacter = true
 Character.isSolid = true
 Character.layer = "mg"
 
+local grid1280 = anim8.newGrid(128, 128, 1280, 1280, 0, 0, 0)
 local grid1024 = anim8.newGrid(128, 128, 1024, 1024, 0, 0, 0)
 local grid896 = anim8.newGrid(128, 128, 896, 896, 0, 0, 0)
 local grid768 = anim8.newGrid(128, 128, 768, 768, 0, 0, 0)
@@ -11,7 +12,9 @@ local an60 = anim8.newAnimation(grid1024('1-8', '1-7', '1-4', 8), 1/60)
 local an60p = anim8.newAnimation(grid1024('1-8', '1-7', '1-4', 8), 1/60, "pauseAtEnd")
 local an40 = anim8.newAnimation(grid896('1-7', '1-5', '1-5', 6), 1/60)
 local an35 = anim8.newAnimation(grid768('1-6', '1-5', '1-5', 6), 1/60)
+local an35p = anim8.newAnimation(grid768('1-6', '1-5', '1-5', 6), 1/60, "pauseAtEnd")
 local an30 = anim8.newAnimation(grid768('1-6', '1-5'), 1/60)
+local an30p = anim8.newAnimation(grid768('1-6', '1-5'), 1/60, "pauseAtEnd")
 local an20 = anim8.newAnimation(grid640('1-5', '1-4'), 1/60)
 local an10 = anim8.newAnimation(grid640('1-5', '1-2'), 1/60, "pauseAtEnd")
 local an10reverse = anim8.newAnimation(grid640('5-1', '2-1'), 1/60, "pauseAtEnd")
@@ -24,6 +27,7 @@ Character.an60 = an60
 Character.an40 = an40
 Character.an35 = an35
 Character.an30 = an30
+Character.an30p = an30p
 Character.an20 = an20
 Character.gravity = 2200
 
@@ -36,12 +40,13 @@ function Character:init(args)
     self.position = args.position or {x = args.x or 0, y = args.y or 1000}
     self.velocity = args.velocity or {x = 0, y = 0}
     self.aabb = args.aabb or {x = 0, y = 0, w = PLAYER_WIDTH, h = PLAYER_HEIGHT}
+
     self.standSprite = args.standSprite or assets.img_npc_standing
     self.standAnimation = args.standAnimation or an60:clone()
     self.walkSprite = args.walkSprite or assets.img_npc_walking
     self.walkAnimation = args.walkAnimation or an60:clone()
     self.deathSprite = args.deathSprite or assets.img_npc_death
-    self.deathAnimation = args.deathAnimation or an35:clone()
+    self.deathAnimation = args.deathAnimation or an35p:clone()
     self.hostile = args.hostile
 
     --only for player
@@ -51,16 +56,25 @@ function Character:init(args)
     self.getupAnimation = args.getupAnimation or an10reverse:clone()
     self.chargeSprite = args.chargeSprite or assets.img_player_charge
     self.chargeAnimation = args.chargeAnimation or an60p:clone()
+    self.kickSprite = args.kickSprite or assets.img_player_kick
+    self.kickAnimation = args.kickAnimation or an35p:clone()
 
     self.hitbox = args.hitbox or {x = 32, y = 32, w = 64, h = 96}
     self.dialog = nil
 
     self.sprite = self.standSprite
     self.animation = self.walkAnimation
+    self.walkSound = args.walkSound or assets.snd_walk60:clone()
+    self.chargeSound = args.chargeSound or assets.snd_walk30:clone()
 end
 
 function Character:getPoint(xlerp, ylerp)
     return self.position.x + self.aabb.x + self.aabb.w * xlerp, self.position.y + self.aabb.y + self.aabb.h * ylerp
+end
+
+function Character:leave()
+    self.chargeSound:stop()
+    self.walkSound:stop()
 end
 
 function Character:onAdd()
@@ -70,8 +84,28 @@ function Character:onAdd()
 end
 
 function Character:onRemove()
+    self.chargeSound:stop()
+    self.walkSound:stop()
     if self.dialog then
         self.world:remove(self.dialog)
+    end
+end
+
+function Character:update(dt)
+    local a = self.action
+    if a == "walking" then
+        self.chargeSound:stop()
+        if not self.walkSound:isPlaying() then
+            self.walkSound:play()
+        end
+    elseif a == "charge" then
+        self.walkSound:stop()
+        if not self.chargeSound:isPlaying() then
+            self.chargeSound:play()
+        end
+    else
+        self.chargeSound:stop()
+        self.walkSound:stop()
     end
 end
 

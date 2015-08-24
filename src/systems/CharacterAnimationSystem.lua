@@ -23,11 +23,6 @@ function CharacterAnimationSystem:process(e, dt)
         e.animation = e.walkAnimation
         e.sprite = e.walkSprite
     elseif a == "standing" then
-        if v.x > 0 then
-            v.x = math.max(0, v.x - dt * fr)
-        elseif v.x < 0 then
-            v.x = math.min(0, v.x + dt * fr)
-        end
         if e.animation ~= e.standAnimation then
             e.standAnimation:gotoFrame(1)
         end
@@ -44,16 +39,27 @@ function CharacterAnimationSystem:process(e, dt)
             e.action = "standing"
         end
     elseif a == "charge" then
-        v.x = math.min(ws * 2, math.max(-ws * 2, v.x + d * dt * ac))
+        v.x = math.min(ws * 3, math.max(-ws * 3, v.x + d * dt * ac))
         if e.animation ~= e.chargeAnimation then
             e.chargeAnimation:gotoFrame(1)
             e.chargeAnimation:resume()
         end
         e.animation = e.chargeAnimation
         e.sprite = e.chargeSprite
+        e.chargeTimer = 4
         if e.animation.status == "paused" then
             e.action = "standing"
-            e.chargeTimer = 4
+        end
+    elseif a == "kick" then
+        if e.animation ~= e.kickAnimation then
+            e.kickAnimation:gotoFrame(1)
+            e.kickAnimation:resume()
+        end
+        e.animation = e.kickAnimation
+        e.sprite = e.kickSprite
+        e.kickTimer = 1
+        if e.animation.status == "paused" then
+            e.action = "standing"
         end
     elseif a == "crouch" then
         if v.x > 0 then
@@ -74,6 +80,15 @@ function CharacterAnimationSystem:process(e, dt)
         end
         e.animation = e.deathAnimation
         e.sprite = e.deathSprite
+    end
+    if a ~= "kick" then e.kicking = false end
+    if a ~= "crouch" then e.crouching = false end
+    if not (a == "walking" or a == "charge") then
+        if v.x > 0 then
+            v.x = math.max(0, v.x - dt * fr)
+        elseif v.x < 0 then
+            v.x = math.min(0, v.x + dt * fr)
+        end
     end
 end
 

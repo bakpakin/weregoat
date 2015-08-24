@@ -10,7 +10,9 @@ function Player:init(x)
         walkAnimation = Character.an40:clone(),
         walkSprite = assets.img_player_walking,
         standAnimation = Character.an40:clone(),
-        standSprite = assets.img_player_standing
+        standSprite = assets.img_player_standing,
+        deathSprite = assets.img_player_death,
+        deathAnimation = Character.an30p
     })
     self.walkSpeed = 135
     self.color = {255, 255, 255}
@@ -18,13 +20,27 @@ function Player:init(x)
 end
 
 function Player:update(dt)
+    Character.update(self, dt)
     if self.controllable then
-        local w = love.keyboard.isDown("w")
+        local n = love.keyboard.isDown("n")
+        local m = love.keyboard.isDown("m")
         local a = love.keyboard.isDown("a")
         local s = love.keyboard.isDown("s")
         local d = love.keyboard.isDown("d")
+        local w = love.keyboard.isDown("w")
         self.chargeTimer = math.max(0, (self.chargeTimer or 0) - dt)
-        if d and not a then
+        self.kickTimer = math.max(0, (self.kickTimer or 0) - dt)
+        if m and (self.kickTimer == 0 or self.action == "kick") then
+            self.action = "kick"
+            self.kicking = true
+        elseif n and (self.chargeTimer == 0 or self.action == "charge") then
+            self.action = "charge"
+        elseif w then
+            self.action = "death"
+        elseif s then
+            self.action = "crouch"
+            self.crouching = true
+        elseif d and not a then
             self.action = "walking"; self.direction = "right"
         elseif a and not d then
             self.action = "walking"; self.direction = "left"
@@ -32,15 +48,9 @@ function Player:update(dt)
             if self.crouching then
                 self.action = "getup"
                 self.crouching = false
-            elseif self.action ~= "getup" then
+            elseif self.action ~= "getup" and not self.kicking then
                 self.action = "standing"
             end
-        end
-        if w and not s and self.chargeTimer == 0 then
-            self.action = "charge"
-        elseif s then
-            self.action = "crouch"
-            self.crouching = true
         end
 
         local p = self.position

@@ -7,13 +7,20 @@ local function makeHud()
     local hud = {}
     hud.layer = "hud"
     hud.draw = function(self)
-
+        lg.setColor(128, 40, 40, 128)
+        lg.rectangle("fill", 15, 15, 310 * (1 - (PLAYER.chargeTimer or 0) / 4), 40)
+        lg.setColor(40, 40, 128, 128)
+        lg.rectangle("fill", 15, 70, 310 * (1 - (PLAYER.kickTimer or 0) / 1), 40)
+        lg.setColor(255, 255, 255, 128)
+        lg.setFont(assets.fnt_small)
+        lg.printf("Charge", 15, 15, 310, "center")
+        lg.printf("Kick", 15, 70, 310, "center")
     end
     return hud
 end
 
 local function addBackStuff(self)
-    local starscale = 0.6
+    local starscale = 0.8
     self.world:add(
         {
             position = {x = 0, y = 0},
@@ -69,6 +76,7 @@ function GameState.getScene(index)
 end
 
 function GameState:enter(from, fromside)
+    startMusic()
     State.enter(self, from, scene, fromside)
     GameState.currentSceneIndex = self.sceneIndex
     local p
@@ -86,6 +94,9 @@ function GameState:enter(from, fromside)
 end
 
 function GameState:leave()
+    for e in pairs(self.world.entities) do
+        if e.leave then e:leave() end
+    end
     self.world:remove(self.player)
     self.world:refresh()
 end
@@ -111,8 +122,9 @@ end
 local function light(x, y)
     return {
         position = {x = x, y = y},
+        sprite = assets.img_lamp,
         lightColor = {255, 255, 190, 150},
-        lightRadius = 250
+        lightRadius = 350
     }
 end
 
@@ -123,17 +135,27 @@ GameState.scenes = {
             sprite = assets.img_buildings1,
             layer = "bg",
         },
-        -- light(890, 650),
-        -- light(1080, 650),
-        -- light(300, 650),
-        -- light(100, 650),
-        -- light(1600, 650),
-        -- light(2000, 650),
+        --entities.NPC{x = 800},
+        light(890, 650),
+        light(1080, 650),
+        light(300, 650),
+        light(100, 650),
+        light(1600, 650),
+        light(2000, 650),
     },
     {
+        {
+            position = {x = 0, y = -75},
+            sprite = assets.img_buildings2,
+            layer = "bg",
+        }
     },
     {
-        entities.NPC{x = 500, direction = "left"}
+        {
+            position = {x = 0, y = -75},
+            sprite = assets.img_buildings3,
+            layer = "bg",
+        }
     }
 }
 

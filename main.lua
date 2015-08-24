@@ -72,6 +72,13 @@ function love.update(dt)
     SCREEN_TRANSITIONS:update(dt)
 end
 
+function startMusic()
+    assets.snd_music:setLooping(true)
+    if not assets.snd_music:isPlaying() then
+        assets.snd_music:play()
+    end
+end
+
 function love.draw()
     if POST_PROCESS then
         lg.setCanvas(POST_PROCESS_CANVAS)
@@ -99,15 +106,18 @@ function love.draw()
         lg.rectangle("fill", 0, 0, sw, sh)
         lg.setColor(255, 255, 255)
         lg.setFont(assets.fnt_big)
-        lg.printf("PAUSED", sw / 2 - 200, sh / 2, 400, "center")
+        lg.printf("PAUSED", sw / 2 - 200, sh / 2 - 200, 400, "center")
+        lg.setFont(assets.fnt_small)
+        lg.printf("Controls:\nA - Move left\nD - Move Right\nP - Toggle Pause\nS - Crouch\nM - Kick\nHold N - Charge forward.", sw / 2 - 200, sh / 2 - 100, 400, "center")
     end
     if DRAW_DEBUG then
         lg.setColor(255, 255, 255)
         local mx, my = love.mouse.getPosition()
         local wx, wy = CAMERA:toWorld(mx, my)
         lg.circle("line", mx, my, 10, 50)
-        lg.setFont(assets.fnt_small)
-        lg.printf(("Screen: (%i, %i)\nWordl: (%i, %i)"):format(mx, my, wx, wy), mx, my + 20, 400, "left")
+        lg.point(mx, my)
+        lg.setFont(assets.fnt_tiny)
+        lg.printf(("Screen: (%i, %i)\nWorld: (%i, %i)"):format(mx, my, wx, wy), mx, my + 20, 400, "left")
     end
 end
 
