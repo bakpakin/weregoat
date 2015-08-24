@@ -1,5 +1,6 @@
 local State = require "src.states.State"
 local GameState = class("GameState", State)
+local CollisionSystem = require "src.systems.CollisionSystem"
 
 local lg = love.graphics
 
@@ -8,7 +9,7 @@ local function makeHud()
     hud.layer = "hud"
     hud.draw = function(self)
         lg.setColor(128, 40, 40, 128)
-        lg.rectangle("fill", 15, 15, 310 * (1 - (PLAYER.chargeTimer or 0) / 4), 40)
+        lg.rectangle("fill", 15, 15, 310 * (1 - (PLAYER.chargeTimer or 0) / 2), 40)
         lg.setColor(40, 40, 128, 128)
         lg.rectangle("fill", 15, 70, 310 * (1 - (PLAYER.kickTimer or 0) / 1), 40)
         lg.setColor(255, 255, 255, 128)
@@ -34,7 +35,7 @@ local function addBackStuff(self)
         },
         {
             position = {x = 0, y = 0},
-            parallaxAnchor = {x = W / 2, y = H / 2},
+            parallaxAnchor = {x = W / 2, y = H / 6},
             parallax = 0.25,
             sprite = assets.img_moon,
             color = {190, 190, 170, 255},
@@ -51,6 +52,7 @@ end
 
 function GameState:init(...)
     State.init(self, ...)
+    self.world:add(CollisionSystem())
     addBackStuff(self)
     self.world:add(makeHud())
 end
@@ -135,7 +137,12 @@ GameState.scenes = {
             sprite = assets.img_buildings1,
             layer = "bg",
         },
-        --entities.NPC{x = 800},
+        entities.NPC{x = 200, hostile = true},
+        entities.NPC{x = 400, hostile = true},
+        entities.NPC{x = 600, hostile = true},
+        entities.NPC{x = 800, hostile = true},
+        entities.NPC{x = 1000, hostile = true},
+
         light(890, 650),
         light(1080, 650),
         light(300, 650),

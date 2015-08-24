@@ -17,17 +17,20 @@ function Player:init(x)
     self.walkSpeed = 135
     self.color = {255, 255, 255}
     self.controllable = true
+
 end
 
 function Player:update(dt)
     Character.update(self, dt)
-    if self.controllable then
+    if self.controllable and not self.isDead then
         local n = love.keyboard.isDown("n")
         local m = love.keyboard.isDown("m")
         local a = love.keyboard.isDown("a")
         local s = love.keyboard.isDown("s")
         local d = love.keyboard.isDown("d")
         local w = love.keyboard.isDown("w")
+        local e = love.keyboard.isDown("e")
+
         self.chargeTimer = math.max(0, (self.chargeTimer or 0) - dt)
         self.kickTimer = math.max(0, (self.kickTimer or 0) - dt)
         if m and (self.kickTimer == 0 or self.action == "kick") then
@@ -35,8 +38,10 @@ function Player:update(dt)
             self.kicking = true
         elseif n and (self.chargeTimer == 0 or self.action == "charge") then
             self.action = "charge"
+            self.charging = true
         elseif w then
             self.action = "death"
+            self.isDead = true
         elseif s then
             self.action = "crouch"
             self.crouching = true
@@ -44,11 +49,17 @@ function Player:update(dt)
             self.action = "walking"; self.direction = "right"
         elseif a and not d then
             self.action = "walking"; self.direction = "left"
+        elseif e then
+            self.action = "feed"
+            self.feeding = true
         else
             if self.crouching then
                 self.action = "getup"
-                self.crouching = false
-            elseif self.action ~= "getup" and not self.kicking then
+            elseif self.feeding then
+                self.action = "feedgetup"
+            elseif self.charging then
+                self.action = "chargegetup"
+            elseif self.action ~= "getup" and self.action ~= "feedgetup" and self.action ~= "chargegetup" and not self.kicking then
                 self.action = "standing"
             end
         end

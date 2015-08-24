@@ -2,7 +2,6 @@ local UpdateSystem = require "src.systems.UpdateSystem"
 local DrawSystem = require "src.systems.DrawSystem"
 local SpriteSystem = require "src.systems.SpriteSystem"
 local MovementSystem = require "src.systems.MovementSystem"
-local CharacterAnimationSystem = require "src.systems.CharacterAnimationSystem"
 local CameraTrackSystem = require "src.systems.CameraTrackSystem"
 local ParallaxSystem = require "src.systems.ParallaxSystem"
 local LightSystem = require "src.systems.LightSystem"
@@ -22,7 +21,6 @@ function State:init(...)
         SyncSystem(),
         UpdateSystem(),
         MovementSystem(),
-        CharacterAnimationSystem(),
         CameraTrackSystem(CAMERA),
         ParallaxSystem(CAMERA),
         AISystem(),

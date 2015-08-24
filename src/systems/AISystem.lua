@@ -13,6 +13,8 @@ local function sign(x)
 end
 
 function AISystem:process(e, dt)
+    if e.isDead then return end
+
     local px, py = PLAYER:getPoint(0.5, 0.5)
     local x, y = e:getPoint(0.5, 0.5)
     local d = e.direction == "left" and -1 or 1
@@ -31,14 +33,14 @@ function AISystem:process(e, dt)
         e.targeting = false
     end
     if e.targeting then
-        d = sign(dx)
-        e.direction = d == -1 and "right" or "left"
         if e.hostile then
-            e.direction = e.direction == "left" and "right" or "left"
+            d = sign(dx)
+            e.action = "shoot"
+        else
+            d = -sign(dx)
+            e.action = "walking"
         end
-    end
-    if e.targeting then
-        e.action = "walking"
+        e.direction = d == 1 and "right" or "left"
     else
         e.shuffleTimer = (e.shuffleTimer or 0) - dt
         if e.shuffleTimer < 0 then
@@ -50,7 +52,7 @@ function AISystem:process(e, dt)
                     e.direction = e.direction == "left" and "right" or "left"
                     e.shuffleTimer = 0.4 + math.random() * 2
                 end
-            elseif e.action == "walking" then
+            elseif e.action ~= "death" then
                 e.action = "standing"
                 e.shuffleTimer = 1.2 + math.random() * 2
             end

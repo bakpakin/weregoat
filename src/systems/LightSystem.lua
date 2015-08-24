@@ -27,7 +27,7 @@ end
 
 function LightSystem:init(camera, ambient)
     self.camera = camera
-    self.ambient = ambient or {40, 40, 40, 255}
+    self.ambient = ambient or {60, 60, 60, 255}
     self.lights = {}
 
     -- Add this system to the scene before the LightSystem to prevent previous
@@ -44,6 +44,9 @@ function LightSystem:resize(w, h)
 end
 
 function LightSystem:preProcess(dt)
+    if not (self.canvasW == lg.getWidth() and self.canvasH == lg.getHeight()) then
+        self:resize(lg.getDimensions())
+    end
     lg.push()
     lg.origin()
     self._tmpcanvas = lg.getCanvas()

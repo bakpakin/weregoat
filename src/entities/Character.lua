@@ -4,12 +4,18 @@ Character.isSolid = true
 Character.layer = "mg"
 
 local grid1280 = anim8.newGrid(128, 128, 1280, 1280, 0, 0, 0)
+local grid1152 = anim8.newGrid(128, 128, 1152, 1152, 0, 0, 0)
 local grid1024 = anim8.newGrid(128, 128, 1024, 1024, 0, 0, 0)
 local grid896 = anim8.newGrid(128, 128, 896, 896, 0, 0, 0)
 local grid768 = anim8.newGrid(128, 128, 768, 768, 0, 0, 0)
 local grid640 = anim8.newGrid(128, 128, 640, 640, 0, 0, 0)
+
+local an100 = anim8.newAnimation(grid1280('1-10', '1-10'), 1/60, "pauseAtEnd")
+local an100r = anim8.newAnimation(grid1280('10-1', '2-1'), 1/60, "pauseAtEnd")
+local an70 = anim8.newAnimation(grid1152('1-9', '1-7', '1-7', 8), 1/60)
 local an60 = anim8.newAnimation(grid1024('1-8', '1-7', '1-4', 8), 1/60)
-local an60p = anim8.newAnimation(grid1024('1-8', '1-7', '1-4', 8), 1/60, "pauseAtEnd")
+local an60p = anim8.newAnimation(grid1024('1-8', '1-6'), 1/60, "pauseAtEnd")
+local an60p2 = anim8.newAnimation(grid1024('1-8', 7, '1-4', 8), 1/60, "pauseAtEnd")
 local an40 = anim8.newAnimation(grid896('1-7', '1-5', '1-5', 6), 1/60)
 local an35 = anim8.newAnimation(grid768('1-6', '1-5', '1-5', 6), 1/60)
 local an35p = anim8.newAnimation(grid768('1-6', '1-5', '1-5', 6), 1/60, "pauseAtEnd")
@@ -47,6 +53,8 @@ function Character:init(args)
     self.walkAnimation = args.walkAnimation or an60:clone()
     self.deathSprite = args.deathSprite or assets.img_npc_death
     self.deathAnimation = args.deathAnimation or an35p:clone()
+    self.shootSprite = args.shootSprite or assets.img_npc_shoot
+    self.shootAnimation = args.shootAnimation or an70:clone()
     self.hostile = args.hostile
 
     --only for player
@@ -56,8 +64,14 @@ function Character:init(args)
     self.getupAnimation = args.getupAnimation or an10reverse:clone()
     self.chargeSprite = args.chargeSprite or assets.img_player_charge
     self.chargeAnimation = args.chargeAnimation or an60p:clone()
+    self.chargegetupSprite = args.chargegetupSprite or assets.img_player_charge
+    self.chargegetupAnimation = args.chargegetupAnimation or an60p2:clone()
     self.kickSprite = args.kickSprite or assets.img_player_kick
     self.kickAnimation = args.kickAnimation or an35p:clone()
+    self.feedSprite = args.feedSprite or assets.img_player_feed
+    self.feedAnimation = args.feedAnimation or an100:clone()
+    self.feedgetupSprite = args.feedgetupSprite or assets.img_player_feed
+    self.feedgetupAnimation = args.feedgetupAnimation or an100r:clone()
 
     self.hitbox = args.hitbox or {x = 32, y = 32, w = 64, h = 96}
     self.dialog = nil
@@ -83,6 +97,10 @@ function Character:onAdd()
     end
 end
 
+function Character:getBounds()
+    return self.position.x + self.hitbox.x, self.position.y + self.hitbox.y, self.hitbox.w, self.hitbox.h
+end
+
 function Character:onRemove()
     self.chargeSound:stop()
     self.walkSound:stop()
@@ -91,8 +109,152 @@ function Character:onRemove()
     end
 end
 
+function Character:kill(x, y)
+    local e = self
+    e.action = "death"
+    e.velocity.x = x or 0
+    e.velocity.y = y or 0
+    e.isDead = true
+    if e.velocity.x > 20 then
+        e.direction = "left"
+    elseif e.velocity.x < -20 then
+        e.direction = "right"
+    end
+end
+
+local WALK_SPEED = 60
+local ACCELERATION = 3000
+local FRICTION = 2600
+local JUMP = 730
+
 function Character:update(dt)
-    local a = self.action
+    local e = self
+    local p = e.position
+    local v = e.velocity
+    local a = e.action
+    local d = e.direction == "left" and -1 or 1
+    local ws = e.walkSpeed or WALK_SPEED
+    local ac = e.accekeration or ACCELERATION
+    local fr = e.friction or FRICTION
+    local sf = e.slideFriction or SLIDE_FRICTION
+    if a == "walking" then
+        v.x = math.min(ws, math.max(-ws, v.x + d * dt * ac))
+        if e.animation ~= e.walkAnimation then
+            e.walkAnimation:gotoFrame(13)
+        end
+        e.animation = e.walkAnimation
+        e.sprite = e.walkSprite
+    elseif a == "standing" then
+        if e.animation ~= e.standAnimation then
+            e.standAnimation:gotoFrame(1)
+        end
+        e.animation = e.standAnimation
+        e.sprite = e.standSprite
+    elseif a == "getup" then
+        if e.animation ~= e.getupAnimation then
+            e.getupAnimation:gotoFrame(1)
+            e.getupAnimation:resume()
+        end
+        e.animation = e.getupAnimation
+        e.sprite = e.getupSprite
+        if e.animation.status == "paused" then
+            e.action = "standing"
+        end
+    elseif a == "charge" then
+        v.x = math.min(ws * 3, math.max(-ws * 3, v.x + d * dt * ac))
+        if e.animation ~= e.chargeAnimation then
+            e.chargeAnimation:gotoFrame(1)
+            e.chargeAnimation:resume()
+        end
+        e.animation = e.chargeAnimation
+        e.sprite = e.chargeSprite
+        e.chargeTimer = 2
+        if e.animation.status == "paused" then
+            e.action = "chargegetup"
+        end
+    elseif a == "chargegetup" then
+        if e.animation ~= e.chargegetupAnimation then
+            e.chargegetupAnimation:gotoFrame(1)
+            e.chargegetupAnimation:resume()
+        end
+        e.animation = e.chargegetupAnimation
+        e.sprite = e.chargegetupSprite
+        if e.animation.status == "paused" then
+            e.action = "standing"
+        end
+    elseif a == "kick" then
+        if e.animation ~= e.kickAnimation then
+            e.kickAnimation:gotoFrame(1)
+            e.kickAnimation:resume()
+        end
+        e.animation = e.kickAnimation
+        e.sprite = e.kickSprite
+        e.kickTimer = 1
+        if e.animation.status == "paused" then
+            e.action = "standing"
+        end
+    elseif a == "feed" then
+        if e.animation ~= e.feedAnimation then
+            e.feedAnimation:gotoFrame(1)
+            e.feedAnimation:resume()
+        end
+        e.animation = e.feedAnimation
+        e.sprite = e.feedSprite
+        if e.animation.status == "paused" then
+            e.animation:gotoFrame(21)
+            e.animation:resume()
+        end
+    elseif a == "feedgetup" then
+        if e.animation ~= e.feedgetupAnimation then
+            e.feedgetupAnimation:gotoFrame(1)
+            e.feedgetupAnimation:resume()
+        end
+        e.animation = e.feedgetupAnimation
+        e.sprite = e.feedgetupSprite
+        if e.animation.status == "paused" then
+            e.action = "standing"
+        end
+    elseif a == "shoot" then
+        if e.animation ~= e.shootAnimation then
+            e.shootAnimation:gotoFrame(1)
+            e.shootAnimation:resume()
+        end
+        e.animation = e.shootAnimation
+        e.sprite = e.shootSprite
+        if e.animation.status == "paused" then
+            e.action = "standing"
+        end
+    elseif a == "crouch" then
+        if v.x > 0 then
+            v.x = math.max(0, v.x - dt * fr)
+        elseif v.x < 0 then
+            v.x = math.min(0, v.x + dt * fr)
+        end
+        if e.animation ~= e.crouchAnimation then
+            e.crouchAnimation:gotoFrame(1)
+            e.crouchAnimation:resume()
+        end
+        e.animation = e.crouchAnimation
+        e.sprite = e.crouchSprite
+    elseif a == "death" then
+        if e.animation ~= e.deathAnimation then
+            e.deathAnimation:gotoFrame(1)
+            e.deathAnimation:resume()
+        end
+        e.animation = e.deathAnimation
+        e.sprite = e.deathSprite
+    end
+    if a ~= "kick" then e.kicking = false end
+    if a ~= "crouch" then e.crouching = false end
+    if a ~= "feed" then e.feeding = false end
+    if a ~= "charge" then e.charging = false end
+    if e.grounded and not (a == "walking" or a == "charge") then
+        if v.x > 0 then
+            v.x = math.max(0, v.x - dt * fr)
+        elseif v.x < 0 then
+            v.x = math.min(0, v.x + dt * fr)
+        end
+    end
     if a == "walking" then
         self.chargeSound:stop()
         if not self.walkSound:isPlaying() then

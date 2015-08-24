@@ -15,8 +15,8 @@ local assets = {
     img_ground = lg.newImage("assets/images/groundstrip.png"),
     img_moon = lg.newImage("assets/images/moon.png"),
     img_shadow = lg.newImage("assets/images/shadow.png"),
-    img_buildings1 = lg.newImage("assets/images/buildings001.png"),
-    img_buildings2 = lg.newImage("assets/images/buildings002.png"),
+    img_buildings1 = lg.newImage("assets/images/buildings002.png"),
+    img_buildings2 = lg.newImage("assets/images/buildings001.png"),
     img_buildings3 = lg.newImage("assets/images/buildings003.png"),
     img_lamp = lg.newImage("assets/images/lamp.png"),
 
@@ -29,6 +29,8 @@ local assets = {
     snd_bloop = multisource.new(love.audio.newSource("assets/sounds/bloop.wav", "static")),
     snd_walk60 = love.audio.newSource("assets/sounds/walk60.wav", "static"),
     snd_walk30 = love.audio.newSource("assets/sounds/walk30.wav", "static"),
+    snd_kick = multisource.new(love.audio.newSource("assets/sounds/kick.wav", "static")),
+    snd_charge = multisource.new(love.audio.newSource("assets/sounds/charge.wav", "static")),
     snd_music = love.audio.newSource("assets/sounds/music.ogg", "stream")
 }
 
