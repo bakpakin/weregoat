@@ -26,6 +26,7 @@ function CollisionSystem:update(dt)
     local es = self.entities
     local a = PLAYER.action
     local px, py = PLAYER:getPoint(0.5, 0.5)
+    PLAYER.prey = nil
     if a == "kick" then
         for i, e in ipairs(es) do
             if e ~= PLAYER and not e.isDead and collides(PLAYER, e) then
@@ -49,7 +50,15 @@ function CollisionSystem:update(dt)
             end
         end
     elseif a == "feed" then
-
+        for i, e in ipairs(es) do
+            if e ~= PLAYER and e.isDead and collides(PLAYER, e) then
+                local x, y = e:getPoint(0.5, 0.5)
+                local dx, dy = px - x, py - y
+                if (PLAYER.direction == "right") == (dx < 0) then
+                    PLAYER.prey = e
+                end
+            end
+        end
     end
 end
 

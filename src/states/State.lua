@@ -41,6 +41,7 @@ function State:init(...)
         SpriteSystem(CAMERA, "ffg"),
         DrawSystem(HUD_CAMERA, "hud"),
         SpriteSystem(HUD_CAMERA, "hud"),
+        DrawSystem(HUD_CAMERA, "hudcover"),
         ...
     )
 end
@@ -59,20 +60,37 @@ function State:enter()
     self.transitioning = true
     self.screenShade = WORLD:add{
         position = {x=0,y=0},
-        layer="hud",
+        layer="hudcover",
         alpha=255,
         draw = function(self)
             lg.setColor(0, 0, 0, self.alpha)
             lg.rectangle("fill", 0, 0, W, H)
         end
     }
-    SCREEN_TRANSITIONS:to(self.screenShade, 0.5, {alpha=0}):ease("quadout")
+    flux.to(self.screenShade, 0.5, {alpha=0}):ease("quadout")
     :oncomplete(function()
         self.transitioning = false
         if self.player then
             self.player.controllable = true
         end
     end)
+    self.beholdGroup = {}
+    beholder.group(self.beholdGroup, function()
+        if self.addBeholders then
+            self:addBeholders()
+        end
+    end)
+    for e in pairs(self.world.entities) do
+        if e.onEnter then e:onEnter() end
+    end
+end
+
+function State:leave()
+    beholder.stopObserving(self.beholdGroup)
+    for e in pairs(self.world.entities) do
+        if e.onLeave then e:onLeave() end
+    end
+    self.world:refresh()
 end
 
 function State:transitionTo(next, ...)
@@ -80,7 +98,7 @@ function State:transitionTo(next, ...)
         self.trasitioning = true
         self.screenShade.alpha = 0
         local args, len = {...}, select("#", ...)
-        SCREEN_TRANSITIONS:to(self.screenShade, 0.5, {alpha=255}):ease("quadin")
+        flux.to(self.screenShade, 0.5, {alpha=255}):ease("quadin")
         :oncomplete(function()
             self.trasitioning = false
             gamestate.switch(next, unpack(args, 1, len))

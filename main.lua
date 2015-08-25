@@ -16,23 +16,28 @@ DRAW_DEBUG = false
 GROUND_Y = 830
 PAUSED = false
 TIMER = 240
+DIFFICULTY = 0
+REMAINING_PEOPLE = 0
 WORLD = tiny.world()
-SCREEN_TRANSITIONS = flux.group()
-SKIP_INTRO = true
+SKIP_INTRO = false
 PLAYER_WIDTH = 128
 PLAYER_HEIGHT = 128
 CAMERA_SCALE = 1.6
-SHADER = ""
-POST_PROCESS = true
-POST_PROCESS_CANVAS = ""
 CONTROLS = {
     LEFT = "a",
     RIGHT = "d",
     CROUCH = "s",
     CHARGE = "n",
     KICK = "m",
+    HIDE = "w",
     FEED = "e"
 }
+
+-- hack to implement cron like capabilities with flux
+function flux.cron(delay, callback, ...)
+    local args, len = {...}, select("#", ...)
+    flux.to({time = 0}, delay, {time = delay}):oncomplete(function() return callback(unpack(args, 1, len)) end)
+end
 
 local function setFullscreen(fs)
     IS_FULLSCREEN = fs
@@ -64,9 +69,6 @@ function love.resize(w, h)
         HUD_CAMERA:setWindow(xoff, yoff, REALW, REALH)
         HUD_CAMERA:setScale(REALW / W)
     end
-    POST_PROCESS_CANVAS = lg.newCanvas(w, h)
-    SHADER:send("canvas_w", w)
-    SHADER:send("canvas_h", h)
 end
 
 local drawSystems = function(_, s) return not not s.isDrawingSystem end
@@ -74,10 +76,10 @@ local updateSystems = function(_, s) return not s.isDrawingSystem end
 
 function love.update(dt)
     if not PAUSED then
+        TIMER = TIMER - dt
         WORLD:update(dt, updateSystems)
         flux.update(dt)
     end
-    SCREEN_TRANSITIONS:update(dt)
 end
 
 function startMusic()
@@ -88,36 +90,26 @@ function startMusic()
 end
 
 function love.draw()
-    if POST_PROCESS then
-        lg.setCanvas(POST_PROCESS_CANVAS)
-        POST_PROCESS_CANVAS:clear()
-    else
-        lg.setCanvas()
-    end
+    lg.setCanvas()
     love.graphics.setShader()
     love.graphics.origin()
     love.graphics.setScissor()
     love.graphics.setColor(255, 255, 255)
     WORLD:update(PAUSED and 0 or love.timer.getDelta(), drawSystems)
-    if POST_PROCESS then
-        lg.setCanvas()
-        lg.origin()
-        lg.setShader(SHADER)
-        lg.setColor(255, 255, 255, 255)
-        lg.draw(POST_PROCESS_CANVAS)
-        lg.setShader()
-    end
     lg.origin()
+    HUD_CAMERA:push()
     if PAUSED then
         lg.setColor(0, 0, 0, 80)
-        local sw, sh = lg.getDimensions()
-        lg.rectangle("fill", 0, 0, sw, sh)
+        lg.rectangle("fill", 0, 0, W, H)
         lg.setColor(255, 255, 255)
         lg.setFont(assets.fnt_big)
-        lg.printf("PAUSED", sw / 2 - 200, sh / 2 - 200, 400, "center")
-        lg.setFont(assets.fnt_small)
-        lg.printf("Controls:\nA - Move left\nD - Move Right\nP - Toggle Pause\nS - Crouch\nM - Kick\nHold N - Charge forward.", sw / 2 - 200, sh / 2 - 100, 400, "center")
+        lg.printf("PAUSED", 0, 200, W, "center")
+        lg.setFont(assets.fnt_medium2)
+        lg.printf("Controls:\n\nA - Move left\nD - Move Right\nP - Toggle Pause\nW - Hide\nE - Eat dead townsperson\nS - Crouch\nM - Kick\nHold N - Charge forward\nF1 - Toggle Fullscreen", 200, 150, 500, "center")
+        lg.printf("Instructions:\n\nKill and eat every townsperson to move on to the next night. Kill a citizen by charging into him or kicking him. Don't get shot.", W - 700, 150, 500, "center")
     end
+    HUD_CAMERA:pop()
+    lg.origin()
     if DRAW_DEBUG then
         lg.setColor(255, 255, 255)
         local mx, my = love.mouse.getPosition()
@@ -136,25 +128,32 @@ function love.load()
     -- load assets
     assets = require "src.assets"
 
-    SHADER = love.graphics.newShader([[
-    extern number canvas_w = 800;
-    extern number canvas_h = 600;
-
-    vec4 effect(vec4 color, Image texture, vec2 texture_coords, vec2 pixel_coords)
-    {
-       vec4 texcolor = Texel(texture, texture_coords);
-       return texcolor * color;
-    }
-    ]])
+    NIGHT_CLEAR_STATE = require "src.states.NightClearState" ()
+    NIGHT_INTRO_STATE = require "src.states.NightIntroState" ()
 
     gamestate.registerEvents()
     entities = require "src.entities"
     love.resize(lg.getDimensions())
 
+    gamestate.switch{}
     local GameState = require "src.states.GameState"
-    GameState.resetAll()
+    function start()
+        gamestate.current():transitionTo(NIGHT_INTRO_STATE)
+    end
+    function restart()
+        GameState.resetToDifficulty(0)
+        DIFFICULTY = 0
+        start()
+    end
+    function startNoIntro()
+        GameState.resetToDifficulty(DIFFICULTY)
+        gamestate.current():transitionTo(GameState.getScene(1), "left")
+    end
+    function gotoIntro()
+        gamestate.current():transitionTo(require "src.states.IntroState"())
+    end
     if SKIP_INTRO then
-        gamestate.switch(GameState.getScene(1), "left")
+        gamestate.switch(NIGHT_INTRO_STATE)
     else
         gamestate.switch(require "src.states.IntroState"())
     end
@@ -166,18 +165,10 @@ end
 
 beholder.observe("keypressed", "escape", love.event.quit)
 
--- beholder.observe("keypressed", "b", function()
---     POST_PROCESS = not POST_PROCESS
+-- beholder.observe("keypressed", "`", function()
+--     DRAW_DEBUG = not DRAW_DEBUG
 -- end)
 
-beholder.observe("keypressed", "p", function()
-    PAUSED = not PAUSED
-end)
-
-beholder.observe("keypressed", "`", function()
-    DRAW_DEBUG = not DRAW_DEBUG
-end)
-
-beholder.observe("keypressed", "\\", function()
+beholder.observe("keypressed", "f1", function()
     setFullscreen(not IS_FULLSCREEN)
 end)

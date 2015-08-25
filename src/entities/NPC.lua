@@ -2,8 +2,15 @@ local Character = require "src.entities.Character"
 local NPC = class ("NPC", Character)
 NPC.isAi = true
 
---NPC.lightColor = {255, 255, 255, 50}
---NPC.lightRadius = 150
+function NPC:init(...)
+    Character.init(self, ...)
+    if self.hostile then
+        self.walkSprite = assets.img_red_walking
+        self.standSprite = assets.img_red_standing
+        self.shootSprite = assets.img_red_shoot
+        self.deathSprite = assets.img_red_death
+    end
+end
 
 function NPC:update(dt)
     Character.update(self, dt)

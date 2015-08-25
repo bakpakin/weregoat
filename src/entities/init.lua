@@ -10,5 +10,6 @@ r "NPC"
 r "Character"
 r "GunShot"
 r "LampPost"
+r "Lamp"
 
 return ret

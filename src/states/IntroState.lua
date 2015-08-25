@@ -1,12 +1,13 @@
 local State = require "src.states.State"
 local IntroState = class ("IntroState", State)
+
 function IntroState:enter()
     State.enter(self)
     local fade = {alpha = 0}
     local shake = {shake = 0}
     self.world:add(
         Text(0, 250, "[Weregoat](color; shake)", {
-            font = assets.fnt_big,
+            font = assets.fnt_huge,
             align_center = true,
             wrap_width = W,
             color = function(dt, c)
@@ -22,8 +23,8 @@ function IntroState:enter()
             end,
             layer = "hud"
         }),
-        Text(0, 350, "[A game by bakpakin for Ludum Dare 33](color)", {
-            font = assets.fnt_small,
+        Text(0, 450, "[A game by bakpakin for Ludum Dare 33](color)", {
+            font = assets.fnt_medium,
             align_center = true,
             wrap_width = W,
             color = function(dt, c)
@@ -32,16 +33,13 @@ function IntroState:enter()
             layer = "hud"
         })
     )
-    SCREEN_TRANSITIONS:to(shake, 10, {shake = 16}):ease("quartin")
-    SCREEN_TRANSITIONS:to(fade, 2.5, {alpha = 255}):ease("linear"):delay(2)
+    flux.to(shake, 10, {shake = 16}):ease("quartin")
+    flux.to(fade, 2.5, {alpha = 255}):ease("linear"):delay(2)
     :after(fade, 2.4, {alpha = 0}):ease("linear"):delay(2)
     :onstart(function()
-        if not MOTOR_2D then
-            assets.snd_gbu:play()
-        end
+        assets.snd_gbu:play()
     end):after(fade, 1, {alpha = 0}):delay(3):oncomplete(function()
-        local GameState = require "src.states.GameState"
-        gamestate.switch(GameState.getScene(1), "left")
+        restart()
     end)
 end
 

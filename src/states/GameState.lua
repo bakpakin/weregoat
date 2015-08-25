@@ -16,6 +16,15 @@ local function makeHud()
         lg.setFont(assets.fnt_small)
         lg.printf("Charge", 15, 15, 310, "center")
         lg.printf("Kick", 15, 70, 310, "center")
+        lg.setColor(255, 255, 255, 255)
+        lg.setFont(assets.fnt_medium)
+        lg.printf(("Remaining Townspeople: %i"):format(REMAINING_PEOPLE), 15, 15, W - 30, "right")
+        lg.printf(("Night %i"):format(DIFFICULTY + 1), 15, 15, W - 30, "center")
+        if PLAYER.feeding and PLAYER.prey then
+            lg.setColor(255, 0, 0, 128)
+            local x, y = PLAYER.position.x + PLAYER.aabb.x, PLAYER.position.y + PLAYER.aabb.y
+            lg.rectangle("fill", x, y - 45, PLAYER.aabb.w * PLAYER.prey.feedTimer / PLAYER.prey.feedTime, 15)
+        end
     end
     return hud
 end
@@ -50,30 +59,66 @@ local function addBackStuff(self)
     )
 end
 
-function GameState:init(...)
+function GameState:init(difficulty, ...)
     State.init(self, ...)
+    self.difficulty = difficulty or 0
     self.world:add(CollisionSystem())
     addBackStuff(self)
     self.world:add(makeHud())
 end
 
-function GameState.generate()
-
+function GameState.clearAllDifficulties()
+    GameState.startSceneGroups = {}
 end
 
-function GameState.resetAll()
-    local states = {}
-    GameState.states = states
-    for i, scene in ipairs(GameState.scenes) do
-        states[i] = GameState(unpack(scene))
-        states[i].sceneIndex = i
+function GameState.clearDifficulty(difficulty)
+    GameState.startSceneGroups[difficulty] = nil
+end
+
+local function copy(obj, seen)
+    if type(obj) ~= 'table' then return obj end
+    if seen and seen[obj] then return seen[obj] end
+    local s = seen or {}
+    local res = setmetatable({}, getmetatable(obj))
+    s[obj] = res
+    for k, v in pairs(obj) do res[copy(k, s)] = copy(v, s) end
+    return res
+end
+
+function GameState.resetToDifficulty(difficulty)
+    difficulty = difficulty or 0
+    GameState.difficulty = difficulty
+    local ss = GameState.startSceneGroups[difficulty]
+    if not ss then -- generate it
+        ss = {}
+        GameState.startSceneGroups[difficulty] = ss
+        for i, scene in ipairs(GameState.scenes) do
+            ss[i] = GameState(difficulty, unpack(scene))
+            ss[i].sceneIndex = i
+        end
+        local friendlyCount = 3 + math.floor(1.5 * difficulty)
+        for i = 1, friendlyCount do
+            local scene = math.random(1, 3)
+            ss[scene].world:addEntity(entities.NPC{
+                x = math.random(scene == 1 and 500 or 50, 2000)
+            })
+        end
+        local hostileCount = 2 * math.floor(difficulty)
+        for i = 1, hostileCount do
+            local scene = math.random(1, 3)
+            ss[scene].world:addEntity(entities.NPC{
+                x = math.random(scene == 1 and 500 or 50, 2000),
+                hostile = true
+            })
+        end
+        ss.friendlyCount = friendlyCount
+        ss.hostileCount = hostileCount
     end
+    GameState.states = copy(ss)
+    REMAINING_PEOPLE = ss.friendlyCount + ss.hostileCount
 end
 
 function GameState.getScene(index)
-    if not GameState.states then
-        GameState.resetAll()
-    end
     return GameState.states[index]
 end
 
@@ -95,12 +140,10 @@ function GameState:enter(from, fromside)
     self.world:refresh()
 end
 
-function GameState:leave()
-    for e in pairs(self.world.entities) do
-        if e.leave then e:leave() end
-    end
-    self.world:remove(self.player)
-    self.world:refresh()
+function GameState:addBeholders()
+    beholder.observe("keypressed", "p", function()
+        PAUSED = not PAUSED
+    end)
 end
 
 function GameState:toLeft()
@@ -130,6 +173,8 @@ local function light(x, y)
     }
 end
 
+GameState.startSceneGroups = {}
+
 GameState.scenes = {
     {
         {
@@ -137,14 +182,9 @@ GameState.scenes = {
             sprite = assets.img_buildings1,
             layer = "bg",
         },
-        entities.LampPost(600),
-        entities.LampPost(1400, true),
-        entities.NPC{x = 200, hostile = true},
-        entities.NPC{x = 400, hostile = true},
-        entities.NPC{x = 600, hostile = true},
-        entities.NPC{x = 800, hostile = true},
-        entities.NPC{x = 1000, hostile = true}
-    },
+        entities.Lamp(600),
+        entities.Lamp(1400)
+        },
     {
         {
             position = {x = 0, y = -75},
@@ -162,9 +202,9 @@ GameState.scenes = {
             sprite = assets.img_buildings3,
             layer = "bg",
         },
-        entities.LampPost(200),
-        entities.LampPost(835),
-        entities.LampPost(1950),
+        entities.Lamp(200),
+        entities.Lamp(835),
+        entities.Lamp(1950),
     }
 }
 

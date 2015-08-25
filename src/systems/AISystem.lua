@@ -14,12 +14,11 @@ end
 
 function AISystem:process(e, dt)
     if e.isDead then return end
-
     local px, py = PLAYER:getPoint(0.5, 0.5)
     local x, y = e:getPoint(0.5, 0.5)
     local d = e.direction == "left" and -1 or 1
     local dx, dy = px - x, py - y
-    if math.abs(dx) < 300 then
+    if math.abs(dx) < 300 and not (PLAYER.isDead or PLAYER.hiding) then
         if dx * d > 0 then
             if not e.targeting then
                 e:say(1,"!")
@@ -29,16 +28,13 @@ function AISystem:process(e, dt)
     else
         e.targeting = false
     end
-    if PLAYER.isHidden then
-        e.targeting = false
-    end
     if e.targeting then
         if e.hostile then
             d = sign(dx)
             e.action = "shoot"
         else
             d = -sign(dx)
-            e.action = "walking"
+            e.action = "running"
         end
         e.direction = d == 1 and "right" or "left"
     else

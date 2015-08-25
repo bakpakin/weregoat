@@ -27,7 +27,7 @@ end
 
 function LightSystem:init(camera, ambient)
     self.camera = camera
-    self.ambient = ambient or {60, 60, 60, 255}
+    self.ambient = ambient or {80, 80, 80, 255}
     self.lights = {}
 
     -- Add this system to the scene before the LightSystem to prevent previous
